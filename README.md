@@ -18,6 +18,8 @@ The first eight numbers are given below:
 |2776|277|6|427763435299200|
 |3209|320|9|31408938532094015692800|
 
+## Archives and Releases
+* [Release Notes](RELEASE.md)
 
 ## Licence
 All code are released under GPLv3+ licence. The associated documentation and other content are released under [CC-BY-SA](http://creativecommons.org/licenses/by-sa/4.0/).
