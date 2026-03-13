@@ -42,13 +42,12 @@ jobs:
 
       - name: Assemble site artifact
         run: |
-          mkdir -p dist/assets
+          mkdir -p dist
           cp index.html dist/
           cp A359012.csv dist/
           cp ANALYSIS.md dist/
           cp README.md dist/
-          cp assets/site.css dist/assets/
-          cp assets/site.js dist/assets/
+          cp -r assets dist/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
