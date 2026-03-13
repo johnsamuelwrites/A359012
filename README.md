@@ -21,20 +21,21 @@ The first eight numbers are given below:
 ## Repository Contents
 - [`A359012.py`](./A359012.py): brute-force generators for the sequence and an annotated length table.
 - [`main.py`](./main.py): exports the sequence data to CSV files.
-- [`A359012.csv`](./A359012.csv): generated terms and their witnessing permutation values below `10^4`.
-- [`A359012_length.csv`](./A359012_length.csv): the same search with digit-length annotations.
+- [`A359012.csv`](./A359012.csv): generated terms and their witnessing permutation values below `10^6`.
+- [`A359012_length.csv`](./A359012_length.csv): the same search with digit-length annotations below `10^6`.
 - [`analyze_sequence.py`](./analyze_sequence.py): computes a small mathematical summary and writes [`ANALYSIS.md`](./ANALYSIS.md).
 - [`tests/test_a359012.py`](./tests/test_a359012.py): regression tests for known terms and basic generator behavior.
 
-## Observed Properties Below 10000
-Using the current brute-force search bound `10 <= k < 10^4`, the repository finds 33 terms.
+## Observed Properties Below 1000000
+Using the current brute-force search bound `10 <= k < 10^6`, the repository finds 712 terms.
 
-- The sequence is sparse in this range.
-- Four terms have 3 digits and twenty-nine have 4 digits.
-- Balanced splits are common: `(len(x), len(y)) = (2, 2)` occurs 21 times.
-- Only one current witness is a prefix match inside `xPy` (`318`); the others are internal substring hits.
-- 32 of the 33 witness values `xPy` end in `0`.
-- Repeated-digit terms are slightly more common than all-distinct-digit terms in the current data.
+- The sequence is still sparse in this larger range: only 712 terms appear below one million.
+- Term lengths are now distributed as 4 three-digit terms, 29 four-digit terms, 114 five-digit terms, and 565 six-digit terms.
+- Balanced longer splits dominate the current data, especially `(3, 3)` with 391 cases and `(4, 2)` with 162 cases.
+- Substring hits are overwhelmingly internal: 3 prefix hits, 1 suffix hit, and 708 strictly internal hits.
+- 708 of the 712 witness values `xPy` end in `0`.
+- Repeated-digit terms now dominate strongly: 572 terms have repeated digits, while 140 have all digits distinct.
+- Palindromic terms do occur: `9999`, `29092`, `343343`, and `805508`.
 
 See [`ANALYSIS.md`](./ANALYSIS.md) for the generated summary.
 

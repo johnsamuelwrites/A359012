@@ -12,7 +12,7 @@ from A359012 import (
     write_sequence_lengths_to_file,
 )
 
-maximum = 10**4
+maximum = 10**6
 A359012 = generate_sequence_A359012(maximum)
 write_sequence_to_file(A359012)
 

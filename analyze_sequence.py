@@ -36,6 +36,26 @@ def build_summary(maximum: int) -> str:
     repeated_y_values = [(y, count) for y, count in y_values.items() if count > 1]
     repeated_y_values.sort(key=lambda item: (-item[1], item[0]))
 
+    # Substring position analysis
+    positions = [perm.find(k) for k, _, _, perm in sequence]
+    avg_position = sum(positions) / len(positions) if positions else 0
+    position_table = [
+        (k, pos, len(perm), round(pos / len(perm), 3))
+        for (k, _, _, perm), pos in zip(sequence, positions)
+    ]
+
+    # Digit expansion ratio: how many times longer is P(x,y) than k?
+    expansion_ratios = [
+        (k, len(k), len(perm), round(len(perm) / len(k), 2))
+        for k, _, _, perm in sequence
+    ]
+    avg_expansion = sum(r for _, _, _, r in expansion_ratios) / len(expansion_ratios)
+    min_expansion = min(expansion_ratios, key=lambda t: t[3])
+    max_expansion = max(expansion_ratios, key=lambda t: t[3])
+
+    # Factorial cases (x == y  =>  P(x,y) = x!)
+    factorial_cases = [(k, x) for k, x, y, _ in sequence if x == y]
+
     lines = [
         "# A359012 Analysis",
         "",
@@ -85,12 +105,55 @@ def build_summary(maximum: int) -> str:
             + "."
         ),
         "",
+        "## Substring Position Inside xPy",
+        "",
+        "Position index where k first appears in P(x,y), and its relative depth.",
+        "",
+        "| k | position | |P(x,y)| | relative depth |",
+        "| --- | --- | --- | --- |",
+    ] + [
+        f"| {k} | {pos} | {perm_len} | {rel:.3f} |"
+        for k, pos, perm_len, rel in position_table
+    ] + [
+        "",
+        f"Average substring position: {avg_position:.1f} characters from the start.",
+        "",
+        "## Digit Expansion Ratio  |P(x,y)| / |k|",
+        "",
+        "How many times longer the permutation value is than k itself.",
+        "",
+        "| k | |k| | |P(x,y)| | ratio |",
+        "| --- | --- | --- | --- |",
+    ] + [
+        f"| {k} | {len_k} | {len_perm} | {ratio} |"
+        for k, len_k, len_perm, ratio in expansion_ratios
+    ] + [
+        "",
+        f"Average expansion ratio: {avg_expansion:.1f}x.",
+        f"Smallest ratio: {min_expansion[3]}x for k={min_expansion[0]}.",
+        f"Largest ratio:  {max_expansion[3]}x for k={max_expansion[0]}.",
+        "",
+        "## Factorial Cases",
+        "",
+        (
+            "Terms where x == y (so P(x,y) = x!): "
+            + (
+                ", ".join(f"{k} (x=y={x})" for k, x in factorial_cases)
+                if factorial_cases
+                else "none in this range"
+            )
+            + "."
+        ),
+        "",
         "## Conjecture Starters",
         "",
         "- The sequence appears sparse, so estimating its counting function may be interesting.",
         "- Balanced splits seem favored: `(2, 2)` dominates the current search window.",
         "- Most witnesses are internal substrings rather than prefix or suffix matches.",
         "- Decimal trailing-zero structure in `xPy` may strongly influence where matches can occur.",
+        "- The digit expansion ratio grows rapidly; for large k, P(x,y) has tens of times more",
+        "  digits than k, making a substring match increasingly likely by pure probability -",
+        "  yet the sequence remains sparse because valid splits are structurally constrained.",
         "",
     ]
     return "\n".join(lines)
@@ -113,8 +176,8 @@ def main() -> None:
     parser.add_argument(
         "--maximum",
         type=int,
-        default=10**4,
-        help="Upper bound for the brute-force search (default: 10000).",
+        default=10**6,
+        help="Upper bound for the brute-force search (default: 1000000).",
     )
     parser.add_argument(
         "--output",

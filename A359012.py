@@ -28,7 +28,7 @@ def generate_sequence_A359012(maximum: int):
 
 
 def write_sequence_to_file(sequence: list):
-    with open("A359012.csv", "w") as A359012_csv_file:
+    with open("A359012.csv", "w", newline="") as A359012_csv_file:
         header = ["k", "x", "y", "permutations"]
 
         writer = csv.writer(A359012_csv_file, delimiter=",")
@@ -57,7 +57,7 @@ def generate_sequence_A359012_lengths(maximum: int):
 
 
 def write_sequence_lengths_to_file(sequence: list):
-    with open("A359012_length.csv", "w") as A359012_csv_file:
+    with open("A359012_length.csv", "w", newline="") as A359012_csv_file:
         header = ["k", "|k|", "x", "|x|", "y", "|y|", "permutations", "|permutations|"]
 
         writer = csv.writer(A359012_csv_file, delimiter=",")
