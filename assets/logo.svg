@@ -1,0 +1,24 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="240" rx="52" fill="#06111E"/>
+  <rect x="12" y="12" width="216" height="216" rx="40" stroke="url(#frame)" stroke-width="2"/>
+  <circle cx="120" cy="120" r="76" fill="url(#coreGlow)" fill-opacity="0.18"/>
+  <path d="M56 72H184" stroke="#6EA8FF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M56 168H184" stroke="#53F2C7" stroke-width="10" stroke-linecap="round"/>
+  <path d="M82 72V168" stroke="#EAF1FF" stroke-width="9" stroke-linecap="round"/>
+  <path d="M158 72V168" stroke="#EAF1FF" stroke-width="9" stroke-linecap="round"/>
+  <path d="M82 120H158" stroke="#FFB86B" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="82" cy="72" r="14" fill="#6EA8FF"/>
+  <circle cx="158" cy="168" r="14" fill="#53F2C7"/>
+  <circle cx="120" cy="120" r="16" fill="#FFB86B"/>
+  <path d="M82 72L120 120L158 168" stroke="#EAF1FF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+  <defs>
+    <linearGradient id="frame" x1="26" y1="20" x2="214" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#53F2C7"/>
+      <stop offset="1" stop-color="#6EA8FF"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(120 120) rotate(90) scale(90)">
+      <stop stop-color="#53F2C7"/>
+      <stop offset="1" stop-color="#53F2C7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>

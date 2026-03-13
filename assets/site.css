@@ -96,6 +96,38 @@ body::before {
   margin-bottom: 36px;
 }
 
+.brandmark,
+.title-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brandmark-logo {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 0 12px rgba(83, 242, 199, 0.24));
+}
+
+.hero-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+}
+
+.title-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.86rem;
+}
+
 .eyebrow,
 .section-kicker,
 .kicker,

@@ -25,6 +25,7 @@ The first eight numbers are given below:
 - [`analyze_sequence.py`](./analyze_sequence.py): computes a compact mathematical summary from [`A359012.csv`](./A359012.csv) and writes [`ANALYSIS.md`](./ANALYSIS.md).
 - [`index.html`](./index.html): an interactive D3-powered website for exploring the sequence visually.
 - [`assets/site.js`](./assets/site.js) and [`assets/site.css`](./assets/site.css): the browser-side logic and styling for the website.
+- [`assets/logo.svg`](./assets/logo.svg) and [`assets/favicon.svg`](./assets/favicon.svg): the visual identity for the site and browser tab.
 - [`tests/test_a359012.py`](./tests/test_a359012.py): regression tests for known terms and basic generator behavior.
 
 ## Observed Properties Below 1000000
