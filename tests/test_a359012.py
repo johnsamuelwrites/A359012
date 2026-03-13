@@ -6,8 +6,14 @@
 
 import csv
 import math
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from A359012 import (
+    annotate_sequence_for_csv,
+    annotate_sequence_with_lengths,
     generate_sequence_A359012,
     generate_sequence_A359012_lengths,
     write_sequence_lengths_to_file,
@@ -61,6 +67,16 @@ def test_length_variant_tracks_digit_lengths():
     row = next(item for item in sequence if item[0] == "729")
 
     assert row == ("729", 3, "72", 2, "9", 1, str(math.perm(72, 9)), 17)
+
+
+def test_length_annotations_are_derived_from_base_sequence():
+    base_sequence = generate_sequence_A359012(1000)
+    assert annotate_sequence_with_lengths(base_sequence) == generate_sequence_A359012_lengths(1000)
+
+
+def test_csv_annotations_include_position_and_ratios():
+    row = next(item for item in annotate_sequence_for_csv(generate_sequence_A359012(1000)) if item[0] == "692")
+    assert row == ("692", 3, "69", 2, "2", 1, "4692", 4, 1, 0.25, 1.33)
 
 
 # ---------------------------------------------------------------------------
@@ -233,10 +249,22 @@ def test_write_sequence_to_file_produces_correct_csv(tmp_path, monkeypatch):
 
     # Filter blank rows produced by the Windows \r\r\n artefact in the source writer
     rows = [r for r in csv.reader((tmp_path / "A359012.csv").open()) if r]
-    assert rows[0] == ["k", "x", "y", "permutations"]
+    assert rows[0] == [
+        "k",
+        "|k|",
+        "x",
+        "|x|",
+        "y",
+        "|y|",
+        "permutations",
+        "|permutations|",
+        "position_of_k",
+        "relative_depth",
+        "expansion_ratio",
+    ]
     assert len(rows) - 1 == len(sequence)
-    for row, (k, x, y, perm) in zip(rows[1:], sequence):
-        assert row == [k, x, y, perm]
+    for row, expected in zip(rows[1:], annotate_sequence_for_csv(sequence)):
+        assert row == [str(value) for value in expected]
 
 
 def test_write_sequence_lengths_to_file_produces_correct_csv(tmp_path, monkeypatch):

@@ -1,12 +1,27 @@
 import argparse
+import csv
 from collections import Counter
 from pathlib import Path
 
 from A359012 import generate_sequence_A359012
 
 
-def build_summary(maximum: int) -> str:
-    sequence = generate_sequence_A359012(maximum)
+def load_sequence_from_csv(path: Path) -> list[tuple[str, str, str, str]]:
+    with path.open(newline="", encoding="utf-8") as csv_file:
+        reader = csv.DictReader(csv_file)
+        return [
+            (row["k"], row["x"], row["y"], row["permutations"])
+            for row in reader
+        ]
+
+
+def build_summary(maximum: int, csv_path: Path | None = None) -> str:
+    if csv_path and csv_path.exists():
+        sequence = load_sequence_from_csv(csv_path)
+        search_description = f"CSV source: `{csv_path.name}`"
+    else:
+        sequence = generate_sequence_A359012(maximum)
+        search_description = f"Search bound: terms `k` with `10 <= k < {maximum}`"
 
     if not sequence:
         return (
@@ -35,6 +50,7 @@ def build_summary(maximum: int) -> str:
     y_values = Counter(y for _, _, y, _ in sequence)
     repeated_y_values = [(y, count) for y, count in y_values.items() if count > 1]
     repeated_y_values.sort(key=lambda item: (-item[1], item[0]))
+    top_repeated_y_values = repeated_y_values[:10]
 
     # Substring position analysis
     positions = [perm.find(k) for k, _, _, perm in sequence]
@@ -59,12 +75,8 @@ def build_summary(maximum: int) -> str:
     lines = [
         "# A359012 Analysis",
         "",
-        f"Search bound: terms `k` with `10 <= k < {maximum}`",
+        search_description,
         f"Terms found: {len(sequence)}",
-        "",
-        "## Terms",
-        "",
-        ", ".join(k for k, _, _, _ in sequence),
         "",
         "## Observed Properties",
         "",
@@ -98,40 +110,32 @@ def build_summary(maximum: int) -> str:
         (
             "- Repeated `y` values: "
             + (
-                ", ".join(f"{y} ({count})" for y, count in repeated_y_values)
+                ", ".join(f"{y} ({count})" for y, count in top_repeated_y_values)
                 if repeated_y_values
                 else "none"
             )
-            + "."
+            + ("." if len(repeated_y_values) <= 10 else ", ...")
         ),
         "",
-        "## Substring Position Inside xPy",
+        "## Aggregate Measures",
         "",
-        "Position index where k first appears in P(x,y), and its relative depth.",
+        f"- Average substring position inside `P(x,y)`: {avg_position:.1f} digits from the start.",
+        f"- Average expansion ratio `|P(x,y)| / |k|`: {avg_expansion:.1f}x.",
+        (
+            f"- Smallest expansion ratio: {min_expansion[3]}x for `k={min_expansion[0]}`; "
+            f"largest: {max_expansion[3]}x for `k={max_expansion[0]}`."
+        ),
         "",
-        "| k | position | |P(x,y)| | relative depth |",
-        "| --- | --- | --- | --- |",
+        "## Examples",
+        "",
+        "| k | x | y | |P(x,y)| | position of k | relative depth | expansion ratio |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ] + [
-        f"| {k} | {pos} | {perm_len} | {rel:.3f} |"
-        for k, pos, perm_len, rel in position_table
-    ] + [
-        "",
-        f"Average substring position: {avg_position:.1f} characters from the start.",
-        "",
-        "## Digit Expansion Ratio  |P(x,y)| / |k|",
-        "",
-        "How many times longer the permutation value is than k itself.",
-        "",
-        "| k | |k| | |P(x,y)| | ratio |",
-        "| --- | --- | --- | --- |",
-    ] + [
-        f"| {k} | {len_k} | {len_perm} | {ratio} |"
-        for k, len_k, len_perm, ratio in expansion_ratios
+        f"| {k} | {x} | {y} | {len(perm)} | {perm.find(k)} | {round(perm.find(k) / len(perm), 3):.3f} | {round(len(perm) / len(k), 2)} |"
+        for k, x, y, perm in sequence[:15]
     ] + [
         "",
-        f"Average expansion ratio: {avg_expansion:.1f}x.",
-        f"Smallest ratio: {min_expansion[3]}x for k={min_expansion[0]}.",
-        f"Largest ratio:  {max_expansion[3]}x for k={max_expansion[0]}.",
+        "The table shows the first 15 terms only; the CSV remains the full source dataset.",
         "",
         "## Factorial Cases",
         "",
@@ -185,9 +189,15 @@ def main() -> None:
         default=Path("ANALYSIS.md"),
         help="Where to write the Markdown summary (default: ANALYSIS.md).",
     )
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("A359012.csv"),
+        help="CSV source to analyze when available (default: A359012.csv).",
+    )
     args = parser.parse_args()
 
-    summary = build_summary(args.maximum)
+    summary = build_summary(args.maximum, args.input)
     args.output.write_text(summary, encoding="utf-8")
     print(f"Wrote analysis to {args.output}")
 

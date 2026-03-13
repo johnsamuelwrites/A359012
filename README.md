@@ -19,11 +19,10 @@ The first eight numbers are given below:
 |3209|320|9|31408938532094015692800|
 
 ## Repository Contents
-- [`A359012.py`](./A359012.py): brute-force generators for the sequence and an annotated length table.
-- [`main.py`](./main.py): exports the sequence data to CSV files.
-- [`A359012.csv`](./A359012.csv): generated terms and their witnessing permutation values below `10^6`.
-- [`A359012_length.csv`](./A359012_length.csv): the same search with digit-length annotations below `10^6`.
-- [`analyze_sequence.py`](./analyze_sequence.py): computes a small mathematical summary and writes [`ANALYSIS.md`](./ANALYSIS.md).
+- [`A359012.py`](./A359012.py): brute-force generator for the sequence plus helpers for derived annotations.
+- [`main.py`](./main.py): exports the canonical sequence data to a single CSV file.
+- [`A359012.csv`](./A359012.csv): the source dataset of generated terms, digit-length annotations, and row-level analysis fields below `10^6`.
+- [`analyze_sequence.py`](./analyze_sequence.py): computes a compact mathematical summary from [`A359012.csv`](./A359012.csv) and writes [`ANALYSIS.md`](./ANALYSIS.md).
 - [`tests/test_a359012.py`](./tests/test_a359012.py): regression tests for known terms and basic generator behavior.
 
 ## Observed Properties Below 1000000
@@ -40,13 +39,13 @@ Using the current brute-force search bound `10 <= k < 10^6`, the repository find
 See [`ANALYSIS.md`](./ANALYSIS.md) for the generated summary.
 
 ## Reproduce
-Generate the CSV files:
+Generate the CSV source:
 
 ```bash
 python main.py
 ```
 
-Generate the analysis summary:
+Generate the analysis summary from the CSV source:
 
 ```bash
 python analyze_sequence.py
