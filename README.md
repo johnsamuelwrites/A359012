@@ -23,6 +23,8 @@ The first eight numbers are given below:
 - [`main.py`](./main.py): exports the canonical sequence data to a single CSV file.
 - [`A359012.csv`](./A359012.csv): the source dataset of generated terms, digit-length annotations, and row-level analysis fields below `10^6`.
 - [`analyze_sequence.py`](./analyze_sequence.py): computes a compact mathematical summary from [`A359012.csv`](./A359012.csv) and writes [`ANALYSIS.md`](./ANALYSIS.md).
+- [`index.html`](./index.html): an interactive D3-powered website for exploring the sequence visually.
+- [`assets/site.js`](./assets/site.js) and [`assets/site.css`](./assets/site.css): the browser-side logic and styling for the website.
 - [`tests/test_a359012.py`](./tests/test_a359012.py): regression tests for known terms and basic generator behavior.
 
 ## Observed Properties Below 1000000
@@ -50,6 +52,19 @@ Generate the analysis summary from the CSV source:
 ```bash
 python analyze_sequence.py
 ```
+
+Preview the website locally:
+
+```bash
+python -m http.server
+```
+
+Then open `http://localhost:8000`.
+
+Deploy the website with GitHub Pages:
+
+- The workflow [`deploy-site.yml`](./.github/workflows/deploy-site.yml) publishes the static site on pushes to `main`.
+- The deployment uploads `index.html`, `assets/`, `A359012.csv`, and supporting markdown files as the Pages artifact.
 
 Run the tests:
 

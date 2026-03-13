@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A359012 Sequence Atlas</title>
+    <meta
+      name="description"
+      content="A futuristic interactive atlas for the integer sequence A359012, powered by D3 and the canonical CSV dataset."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <nav class="topbar">
+          <span class="eyebrow">A359012</span>
+          <a class="toplink" href="https://oeis.org/A359012">OEIS</a>
+        </nav>
+        <div class="hero-grid">
+          <section class="hero-copy">
+            <p class="kicker">Permutation Sequence Observatory</p>
+            <h1>Interactive cartography for a sparse, strange substring sequence.</h1>
+            <p class="lede">
+              A359012 tracks integers <code>k</code> that reappear inside
+              <code>xPy</code> when <code>k = concat(x, y)</code>. This site reads the
+              canonical CSV directly and turns the dataset into an explorable visual atlas.
+            </p>
+            <div class="hero-actions">
+              <a href="#dashboard" class="button button-primary">Explore the data</a>
+              <a href="#table-section" class="button button-secondary">Inspect rows</a>
+            </div>
+          </section>
+          <aside class="hero-panel">
+            <p class="panel-label">Live Dataset</p>
+            <div id="hero-stats" class="hero-stats">
+              <div class="stat-skeleton"></div>
+              <div class="stat-skeleton"></div>
+              <div class="stat-skeleton"></div>
+            </div>
+          </aside>
+        </div>
+      </header>
+
+      <main id="dashboard">
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">System Summary</p>
+            <h2>What the dataset looks like at a glance</h2>
+          </div>
+          <div id="metric-grid" class="metric-grid"></div>
+        </section>
+
+        <section class="section chart-section">
+          <div class="section-head">
+            <p class="section-kicker">Length Profile</p>
+            <h2>Term lengths are heavily concentrated at six digits</h2>
+          </div>
+          <div class="chart-card">
+            <div class="chart-copy">
+              <h3>Length Distribution</h3>
+              <p>
+                Compare how often three-, four-, five-, and six-digit terms appear in the current dataset.
+              </p>
+            </div>
+            <div id="length-chart" class="chart"></div>
+          </div>
+        </section>
+
+        <section class="section two-up">
+          <article class="chart-card">
+            <div class="chart-copy">
+              <h3>Split Geometry</h3>
+              <p>
+                A heatmap of <code>(|x|, |y|)</code> shows which digit splits dominate the sequence.
+              </p>
+            </div>
+            <div id="split-heatmap" class="chart"></div>
+          </article>
+          <article class="chart-card">
+            <div class="chart-copy">
+              <h3>Sequence Growth</h3>
+              <p>
+                The cumulative curve tracks how quickly terms accumulate as <code>k</code> increases.
+              </p>
+            </div>
+            <div id="growth-chart" class="chart"></div>
+          </article>
+        </section>
+
+        <section class="section chart-section">
+          <div class="section-head">
+            <p class="section-kicker">Witness Structure</p>
+            <h2>Every point is a term in the sequence</h2>
+          </div>
+          <div class="chart-card">
+            <div class="chart-copy">
+              <h3>Expansion vs Relative Depth</h3>
+              <p>
+                Dots are colored by term length. Horizontal position shows how much larger
+                <code>xPy</code> is than <code>k</code>, while vertical position shows where
+                <code>k</code> appears within the permutation value.
+              </p>
+            </div>
+            <div id="scatter-plot" class="chart chart-tall"></div>
+          </div>
+        </section>
+
+        <section class="section" id="table-section">
+          <div class="section-head">
+            <p class="section-kicker">Sequence Browser</p>
+            <h2>Filter and inspect the canonical rows</h2>
+          </div>
+          <div class="table-card">
+            <div class="controls">
+              <label>
+                Search terms
+                <input id="search-input" type="search" placeholder="Search k, x, y, or permutations" />
+              </label>
+              <label>
+                Term length
+                <select id="length-filter">
+                  <option value="all">All lengths</option>
+                </select>
+              </label>
+              <label>
+                Row limit
+                <select id="limit-filter">
+                  <option value="25">25</option>
+                  <option value="50" selected>50</option>
+                  <option value="100">100</option>
+                  <option value="250">250</option>
+                </select>
+              </label>
+            </div>
+            <p id="table-summary" class="table-summary"></p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>k</th>
+                    <th>x</th>
+                    <th>y</th>
+                    <th>|P(x,y)|</th>
+                    <th>Position</th>
+                    <th>Depth</th>
+                    <th>Ratio</th>
+                  </tr>
+                </thead>
+                <tbody id="sequence-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="assets/site.js"></script>
+  </body>
+</html>
