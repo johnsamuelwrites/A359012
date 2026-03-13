@@ -34,6 +34,8 @@
               <img src="assets/logo.svg" alt="" class="hero-logo" />
               <span class="title-chip">Sequence Atlas</span>
             </div>
+            <p class="sequence-name">A359012</p>
+            <p class="sequence-credit">Proposed by John Samuel</p>
             <h1>Interactive cartography for a sparse, strange substring sequence.</h1>
             <p class="lede">
               A359012 tracks integers <code>k</code> that reappear inside
@@ -57,6 +59,43 @@
       </header>
 
       <main id="dashboard">
+        <section class="section">
+          <div class="section-head">
+            <p class="section-kicker">Field Guide</p>
+            <h2>Quick hints for the sequence vocabulary</h2>
+          </div>
+          <div class="glossary-grid">
+            <article class="glossary-card">
+              <p class="glossary-term">Witness</p>
+              <p class="glossary-text">
+                A witness is a permutation value <code>P(x,y)</code> that actually contains the term
+                <code>k</code> as a substring.
+              </p>
+            </article>
+            <article class="glossary-card">
+              <p class="glossary-term">Depth</p>
+              <p class="glossary-text">
+                Depth measures where <code>k</code> appears inside its witness. Near <code>0</code>
+                means close to the start; near <code>1</code> means close to the end.
+              </p>
+            </article>
+            <article class="glossary-card">
+              <p class="glossary-term">Expansion Ratio</p>
+              <p class="glossary-text">
+                The expansion ratio is <code>|P(x,y)| / |k|</code>, telling you how much longer the
+                witness is than the term itself.
+              </p>
+            </article>
+            <article class="glossary-card">
+              <p class="glossary-term">Split</p>
+              <p class="glossary-text">
+                A split breaks <code>k</code> into <code>x</code> and <code>y</code>. Different split
+                lengths can produce very different witness behavior.
+              </p>
+            </article>
+          </div>
+        </section>
+
         <section class="section">
           <div class="section-head">
             <p class="section-kicker">System Summary</p>
@@ -104,12 +143,18 @@
 
         <section class="section chart-section">
           <div class="section-head">
-            <p class="section-kicker">Witness Structure</p>
+            <p class="section-kicker">
+              Witness Structure
+              <span class="hint-pill" title="A witness is the permutation value P(x,y) that contains k.">?</span>
+            </p>
             <h2>Every point is a term in the sequence</h2>
           </div>
           <div class="chart-card">
             <div class="chart-copy">
-              <h3>Expansion vs Relative Depth</h3>
+              <h3>
+                Expansion vs Relative Depth
+                <span class="hint-pill" title="Expansion ratio = |P(x,y)| / |k|. Relative depth = where k appears inside P(x,y), scaled between 0 and 1.">?</span>
+              </h3>
               <p>
                 Dots are colored by term length. Horizontal position shows how much larger
                 <code>xPy</code> is than <code>k</code>, while vertical position shows where
@@ -219,12 +264,12 @@
                     <th>k</th>
                     <th>x</th>
                     <th>y</th>
-                    <th>|P(x,y)|</th>
-                    <th>Position</th>
-                    <th>Depth</th>
-                    <th>Ratio</th>
+                    <th>|P(x,y)| <span class="hint-pill" title="The digit length of the witness value P(x,y).">?</span></th>
+                    <th>Position <span class="hint-pill" title="The starting index where k first appears inside its witness P(x,y).">?</span></th>
+                    <th>Depth <span class="hint-pill" title="Relative position of k inside its witness, between 0 and 1.">?</span></th>
+                    <th>Ratio <span class="hint-pill" title="Expansion ratio = |P(x,y)| / |k|. Larger values mean the witness is much longer than the term.">?</span></th>
                     <th>Digit sum</th>
-                    <th>Witnesses</th>
+                    <th>Witnesses <span class="hint-pill" title="How many different (x, y) splits produce a valid witness for the same k.">?</span></th>
                   </tr>
                 </thead>
                 <tbody id="sequence-table"></tbody>
