@@ -120,6 +120,48 @@
           </div>
         </section>
 
+        <section class="section two-up">
+          <article class="chart-card">
+            <div class="chart-copy">
+              <h3>Depth Distribution</h3>
+              <p>
+                How uniformly does <code>k</code> land inside <code>P(x,y)</code>?
+                Each bin covers a 10% slice of the witness length.
+                A flat histogram would indicate no positional bias.
+              </p>
+            </div>
+            <div id="depth-histogram" class="chart"></div>
+          </article>
+          <article class="chart-card">
+            <div class="chart-copy">
+              <h3>Log-Log Growth</h3>
+              <p>
+                Cumulative term count on log-log axes reveals the power-law
+                density exponent α (count(N)&nbsp;≈&nbsp;C&thinsp;·&thinsp;N<sup>α</sup>).
+                A slope α&thinsp;&lt;&thinsp;1 confirms the sequence grows sub-linearly.
+              </p>
+            </div>
+            <div id="loglog-chart" class="chart"></div>
+          </article>
+        </section>
+
+        <section class="section chart-section">
+          <div class="section-head">
+            <p class="section-kicker">Spacing</p>
+            <h2>Gaps between consecutive terms</h2>
+          </div>
+          <div class="chart-card">
+            <div class="chart-copy">
+              <h3>Inter-Term Gap</h3>
+              <p>
+                Each bar is the gap from a term to its predecessor. Large spikes mark
+                stretches of integers where no term qualifies — the sequence's deserts.
+              </p>
+            </div>
+            <div id="gap-chart" class="chart chart-tall"></div>
+          </div>
+        </section>
+
         <section class="section" id="table-section">
           <div class="section-head">
             <p class="section-kicker">Sequence Browser</p>
@@ -147,6 +189,28 @@
                 </select>
               </label>
             </div>
+            <div class="toggle-filters">
+              <label class="toggle-label">
+                <input type="checkbox" id="filter-prime" />
+                Primes only
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="filter-palindrome" />
+                Palindromes only
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="filter-distinct" />
+                All-distinct digits
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="filter-nonzero" />
+                Non-trailing-zero witnesses
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="filter-multi" />
+                Multiple witnesses
+              </label>
+            </div>
             <p id="table-summary" class="table-summary"></p>
             <div class="table-wrap">
               <table>
@@ -159,6 +223,8 @@
                     <th>Position</th>
                     <th>Depth</th>
                     <th>Ratio</th>
+                    <th>Digit sum</th>
+                    <th>Witnesses</th>
                   </tr>
                 </thead>
                 <tbody id="sequence-table"></tbody>

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python main.py)",
+      "Bash(python analyze_sequence.py)",
+      "Bash(python -m pytest -q)"
+    ]
+  }
+}

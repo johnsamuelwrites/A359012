@@ -1,9 +1,10 @@
 import argparse
 import csv
+import math
 from collections import Counter
 from pathlib import Path
 
-from A359012 import generate_sequence_A359012
+from A359012 import generate_sequence_A359012, is_prime
 
 
 def load_sequence_from_csv(path: Path) -> list[tuple[str, str, str, str]]:
@@ -71,6 +72,64 @@ def build_summary(maximum: int, csv_path: Path | None = None) -> str:
 
     # Factorial cases (x == y  =>  P(x,y) = x!)
     factorial_cases = [(k, x) for k, x, y, _ in sequence if x == y]
+
+    # --- Multiple witnesses: k values witnessed by more than one (x, y) split ---
+    k_counts = Counter(k for k, _, _, _ in sequence)
+    multi_witness_ks = sorted((k for k, c in k_counts.items() if c > 1), key=int)
+    unique_k_count = len(k_counts)
+
+    # --- Non-trailing-zero outliers ---
+    non_tz_terms = [(k, x, y, perm) for k, x, y, perm in sequence if not perm.endswith("0")]
+
+    # --- Prime terms ---
+    seen_k = set()
+    prime_terms = []
+    for k, _, _, _ in sequence:
+        if k not in seen_k and is_prime(int(k)):
+            prime_terms.append(k)
+        seen_k.add(k)
+
+    # --- Gap analysis (on unique k values in ascending order) ---
+    unique_ks_sorted = sorted({int(k) for k, _, _, _ in sequence})
+    gaps = [unique_ks_sorted[i] - unique_ks_sorted[i - 1] for i in range(1, len(unique_ks_sorted))]
+    max_gap = max(gaps) if gaps else 0
+    min_gap = min(gaps) if gaps else 0
+    avg_gap = round(sum(gaps) / len(gaps), 1) if gaps else 0
+    # Top-5 largest gaps with the k pair that spans each
+    gap_pairs = sorted(
+        [(unique_ks_sorted[i - 1], unique_ks_sorted[i], unique_ks_sorted[i] - unique_ks_sorted[i - 1])
+         for i in range(1, len(unique_ks_sorted))],
+        key=lambda t: -t[2],
+    )[:5]
+
+    # --- Digit sum distribution ---
+    digit_sums = [sum(int(d) for d in k) for k, _, _, _ in sequence if k not in (None,)]
+    # deduplicate by k
+    seen = set()
+    digit_sums_unique = []
+    for k, _, _, _ in sequence:
+        if k not in seen:
+            digit_sums_unique.append(sum(int(d) for d in k))
+            seen.add(k)
+    ds_counter = Counter(digit_sums_unique)
+    mod9_counter = Counter(s % 9 for s in digit_sums_unique)
+
+    # --- Counting function at decade boundaries ---
+    decade_boundaries = [10 ** i for i in range(2, 7)]
+    decade_counts = [
+        (boundary, len({int(k) for k, _, _, _ in sequence if int(k) < boundary}))
+        for boundary in decade_boundaries
+    ]
+    alpha = _power_law_exponent([(b, c) for b, c in decade_counts if c > 0])
+
+    # --- Relative depth histogram (10 equal bins over [0, 1]) ---
+    bin_edges = [i / 10 for i in range(11)]
+    depth_hist = Counter()
+    for k, _, _, perm in sequence:
+        pos = perm.find(k)
+        depth = pos / len(perm)
+        bucket = min(int(depth * 10), 9)
+        depth_hist[bucket] += 1
 
     lines = [
         "# A359012 Analysis",
@@ -159,8 +218,101 @@ def build_summary(maximum: int, csv_path: Path | None = None) -> str:
         "  digits than k, making a substring match increasingly likely by pure probability -",
         "  yet the sequence remains sparse because valid splits are structurally constrained.",
         "",
+        "## Multiple Witnesses",
+        "",
+        f"- Unique k values in the sequence: {unique_k_count} (total rows including duplicate splits: {len(sequence)}).",
+        (
+            f"- k values with more than one valid (x, y) split: "
+            + (", ".join(multi_witness_ks) if multi_witness_ks else "none in this range")
+            + "."
+        ),
+        "",
+        "## Non-Trailing-Zero Outliers",
+        "",
+        (
+            f"- {len(sequence) - len(non_tz_terms)} of {len(sequence)} witness values end in `0`; "
+            f"{len(non_tz_terms)} do not."
+        ),
+    ] + [
+        f"- k={k}: P({x},{y}) = {perm} (ends in `{perm[-1]}`)"
+        for k, x, y, perm in non_tz_terms
+    ] + [
+        "- Trailing zeros in xPy arise from paired factors of 2 and 5 in the falling factorial product.",
+        "  Exceptions occur when y is small enough that no factor of 5 appears in x*(x-1)*...*(x-y+1).",
+        "",
+        "## Prime Terms",
+        "",
+        f"- Prime k values: {len(prime_terms)} of {unique_k_count} unique terms "
+        f"({100 * len(prime_terms) / unique_k_count:.1f}%).",
+        (
+            "- Primes: "
+            + (", ".join(prime_terms[:20]) + (" ..." if len(prime_terms) > 20 else ""))
+            if prime_terms else "- No prime terms in this range."
+        ),
+        "",
+        "## Gap Analysis",
+        "",
+        f"- Gaps between consecutive unique terms: min = {min_gap}, max = {max_gap}, average = {avg_gap}.",
+        "- Five largest gaps (from, to, size):",
+    ] + [
+        f"  - {a} → {b}: gap {g}"
+        for a, b, g in gap_pairs
+    ] + [
+        "",
+        "## Digit Sum and Residues",
+        "",
+        f"- Digit sums range from {min(digit_sums_unique)} to {max(digit_sums_unique)}.",
+        "- Distribution of (digit sum) mod 9 across unique k values:",
+    ] + [
+        f"  - {r}: {mod9_counter[r]} terms"
+        for r in sorted(mod9_counter)
+    ] + [
+        "- Note: digit_sum ≡ k (mod 9) by casting-out-nines, so this also describes k mod 9.",
+        "",
+        "## Counting Function and Density",
+        "",
+        "- Cumulative term counts at decade boundaries (unique k):",
+    ] + [
+        f"  - below 10^{int(math.log10(b))}: {c} terms"
+        for b, c in decade_counts
+    ] + [
+        (
+            f"- Power-law fit to log-log data: count(N) ≈ C · N^α,  estimated α ≈ {alpha}."
+            if alpha is not None
+            else "- Not enough decade points for a power-law fit."
+        ),
+        "- α < 1 confirms the sequence is sub-linear (sparser than a fixed proportion of integers).",
+        "- Probabilistic model: for a balanced d-digit split, |P(x,y)| ≈ (d/2)·log10(d/2) digits by",
+        "  Stirling, so the expected match probability is ~10^(-(d/2)) per candidate — consistent with",
+        "  the observed rapid growth as digit length increases.",
+        "",
+        "## Relative Depth Distribution",
+        "",
+        "- Histogram of where k lands inside P(x,y) (10 equal bins over [0, 1]):",
+    ] + [
+        f"  - [{i/10:.1f}, {(i+1)/10:.1f}): {depth_hist[i]} terms"
+        for i in range(10)
+    ] + [
+        "- A uniform distribution would place ~10% of terms in each bin.",
+        "- Deviations indicate structural biases in where k appears within its witness.",
+        "",
     ]
     return "\n".join(lines)
+
+
+def _power_law_exponent(decade_counts: list) -> float | None:
+    """Estimate the power-law exponent α from (N, count) pairs via log-log linear regression."""
+    points = [(math.log10(n), math.log10(c)) for n, c in decade_counts if c > 1]
+    if len(points) < 2:
+        return None
+    n = len(points)
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    x_mean = sum(xs) / n
+    y_mean = sum(ys) / n
+    num = sum((xi - x_mean) * (yi - y_mean) for xi, yi in zip(xs, ys))
+    den = sum((xi - x_mean) ** 2 for xi in xs)
+    return round(num / den, 3) if den else None
 
 
 def format_digit_length_counter(counter: Counter, label: str) -> str:

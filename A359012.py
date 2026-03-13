@@ -7,6 +7,23 @@
 
 import csv
 import math
+from collections import Counter
+
+
+def is_prime(n: int) -> bool:
+    """Trial-division primality test; correct and fast for n < 10^7."""
+    if n < 2:
+        return False
+    if n < 4:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
 
 
 def generate_sequence_A359012(maximum: int):
@@ -41,6 +58,12 @@ def write_sequence_to_file(sequence: list):
             "position_of_k",
             "relative_depth",
             "expansion_ratio",
+            "num_witnesses",
+            "gap_prev",
+            "digit_sum",
+            "k_mod_9",
+            "is_prime",
+            "trailing_zero",
         ]
 
         writer = csv.writer(A359012_csv_file, delimiter=",")
@@ -56,12 +79,21 @@ def annotate_sequence_with_lengths(sequence: list):
 
 
 def annotate_sequence_for_csv(sequence: list):
+    # How many (x, y) splits witness each k
+    witness_counts = Counter(k for k, _, _, _ in sequence)
+
+    # Gap from previous unique k in ascending order; first term gets gap 0
+    unique_ks_sorted = sorted({int(k) for k, _, _, _ in sequence})
+    gap_map = {
+        str(kv): (kv - unique_ks_sorted[i - 1] if i > 0 else 0)
+        for i, kv in enumerate(unique_ks_sorted)
+    }
+
     annotated_rows = []
     for k, x, y, perm_str in sequence:
         position = perm_str.find(k)
         perm_length = len(perm_str)
-        relative_depth = round(position / perm_length, 3)
-        expansion_ratio = round(perm_length / len(k), 2)
+        kint = int(k)
         annotated_rows.append(
             (
                 k,
@@ -73,8 +105,14 @@ def annotate_sequence_for_csv(sequence: list):
                 perm_str,
                 perm_length,
                 position,
-                relative_depth,
-                expansion_ratio,
+                round(position / perm_length, 3),
+                round(perm_length / len(k), 2),
+                witness_counts[k],
+                gap_map[k],
+                sum(int(d) for d in k),
+                kint % 9,
+                1 if is_prime(kint) else 0,
+                1 if perm_str.endswith("0") else 0,
             )
         )
     return annotated_rows

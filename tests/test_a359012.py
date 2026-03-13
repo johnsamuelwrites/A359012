@@ -16,6 +16,7 @@ from A359012 import (
     annotate_sequence_with_lengths,
     generate_sequence_A359012,
     generate_sequence_A359012_lengths,
+    is_prime,
     write_sequence_lengths_to_file,
     write_sequence_to_file,
 )
@@ -76,7 +77,10 @@ def test_length_annotations_are_derived_from_base_sequence():
 
 def test_csv_annotations_include_position_and_ratios():
     row = next(item for item in annotate_sequence_for_csv(generate_sequence_A359012(1000)) if item[0] == "692")
-    assert row == ("692", 3, "69", 2, "2", 1, "4692", 4, 1, 0.25, 1.33)
+    # Columns: k, |k|, x, |x|, y, |y|, perm, |perm|, pos, depth, ratio,
+    #          num_witnesses, gap_prev, digit_sum, k_mod_9, is_prime, trailing_zero
+    # gap_prev for 692 = 692 - 557 = 135; digit_sum = 6+9+2 = 17; 692%9 = 8; not prime; 4692 ends in '2'
+    assert row == ("692", 3, "69", 2, "2", 1, "4692", 4, 1, 0.25, 1.33, 1, 135, 17, 8, 0, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -261,6 +265,12 @@ def test_write_sequence_to_file_produces_correct_csv(tmp_path, monkeypatch):
         "position_of_k",
         "relative_depth",
         "expansion_ratio",
+        "num_witnesses",
+        "gap_prev",
+        "digit_sum",
+        "k_mod_9",
+        "is_prime",
+        "trailing_zero",
     ]
     assert len(rows) - 1 == len(sequence)
     for row, expected in zip(rows[1:], annotate_sequence_for_csv(sequence)):
@@ -275,3 +285,117 @@ def test_write_sequence_lengths_to_file_produces_correct_csv(tmp_path, monkeypat
     rows = [r for r in csv.reader((tmp_path / "A359012_length.csv").open()) if r]
     assert rows[0] == ["k", "|k|", "x", "|x|", "y", "|y|", "permutations", "|permutations|"]
     assert len(rows) - 1 == len(sequence)
+
+
+# ---------------------------------------------------------------------------
+# is_prime helper
+# ---------------------------------------------------------------------------
+
+def test_is_prime_returns_false_for_small_non_primes():
+    assert not is_prime(0)
+    assert not is_prime(1)
+    assert not is_prime(4)
+    assert not is_prime(9)
+
+
+def test_is_prime_returns_true_for_small_primes():
+    assert is_prime(2)
+    assert is_prime(3)
+    assert is_prime(5)
+    assert is_prime(7)
+    assert is_prime(11)
+
+
+def test_is_prime_557_is_prime():
+    assert is_prime(557)
+
+
+def test_is_prime_318_and_692_are_not_prime():
+    assert not is_prime(318)   # 318 = 2 * 3 * 53
+    assert not is_prime(692)   # 692 = 4 * 173
+
+
+# ---------------------------------------------------------------------------
+# New CSV columns: gap_prev, digit_sum, k_mod_9, is_prime, trailing_zero,
+#                  num_witnesses
+# ---------------------------------------------------------------------------
+
+def test_csv_gap_prev_first_term_is_zero():
+    """The lowest-k term in any search window has gap_prev = 0."""
+    annotated = annotate_sequence_for_csv(generate_sequence_A359012(1000))
+    first_row = annotated[0]   # 318 is the smallest term below 1000
+    gap_prev = first_row[12]
+    assert gap_prev == 0
+
+
+def test_csv_gap_prev_matches_difference_between_successive_unique_terms():
+    """557 - 318 = 239; 692 - 557 = 135; 729 - 692 = 37."""
+    annotated = annotate_sequence_for_csv(generate_sequence_A359012(1000))
+    by_k = {row[0]: row[12] for row in annotated}
+    assert by_k["318"] == 0
+    assert by_k["557"] == 239
+    assert by_k["692"] == 135
+    assert by_k["729"] == 37
+
+
+def test_csv_digit_sum_column():
+    """Digit sums: 318→12, 557→17, 692→17, 729→18."""
+    annotated = annotate_sequence_for_csv(generate_sequence_A359012(1000))
+    by_k = {row[0]: row[13] for row in annotated}
+    assert by_k["318"] == 12
+    assert by_k["557"] == 17
+    assert by_k["692"] == 17
+    assert by_k["729"] == 18
+
+
+def test_csv_k_mod_9_equals_digit_sum_mod_9_for_every_term():
+    """k % 9 equals (sum of digits of k) % 9 by casting-out-nines."""
+    for row in annotate_sequence_for_csv(generate_sequence_A359012(10000)):
+        k_mod_9 = row[14]
+        digit_sum = row[13]
+        assert k_mod_9 == digit_sum % 9
+
+
+def test_csv_is_prime_column_identifies_557_as_prime():
+    annotated = annotate_sequence_for_csv(generate_sequence_A359012(1000))
+    by_k = {row[0]: row[15] for row in annotated}
+    assert by_k["557"] == 1    # 557 is prime
+    assert by_k["318"] == 0    # 318 = 2 * 3 * 53
+    assert by_k["692"] == 0    # 692 = 4 * 173
+    assert by_k["729"] == 0    # 729 = 3^6
+
+
+def test_csv_trailing_zero_column_matches_perm_suffix():
+    """trailing_zero == 1 iff the permutation string ends in '0'."""
+    for row in annotate_sequence_for_csv(generate_sequence_A359012(1000)):
+        perm_str = row[6]
+        trailing_zero = row[16]
+        assert trailing_zero == (1 if perm_str.endswith("0") else 0)
+
+
+def test_csv_trailing_zero_is_zero_for_692():
+    """P(69, 2) = 4692 does not end in 0."""
+    annotated = annotate_sequence_for_csv(generate_sequence_A359012(1000))
+    row_692 = next(r for r in annotated if r[0] == "692")
+    assert row_692[16] == 0
+
+
+def test_csv_num_witnesses_all_one_below_1000():
+    """No k below 1000 has more than one valid (x, y) split."""
+    for row in annotate_sequence_for_csv(generate_sequence_A359012(1000)):
+        assert row[11] == 1
+
+
+def test_multiple_witnesses_detected_if_present():
+    """num_witnesses reflects how many splits witness the same k."""
+    sequence = generate_sequence_A359012(10**6)
+    annotated = annotate_sequence_for_csv(sequence)
+    # Every annotated row's num_witnesses must be >= 1
+    for row in annotated:
+        assert row[11] >= 1
+    # Terms with two witnesses appear in the sequence twice
+    from collections import Counter
+    k_counts = Counter(row[0] for row in annotated)
+    for k, count in k_counts.items():
+        rows_for_k = [r for r in annotated if r[0] == k]
+        assert all(r[11] == count for r in rows_for_k)

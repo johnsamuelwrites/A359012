@@ -25,7 +25,6 @@ d3.csv(datasetPath, d3.autoType)
         ...row,
         repeatedDigits: new Set(String(row.k).split("")).size < String(row.k).length,
         palindrome: String(row.k) === String(row.k).split("").reverse().join(""),
-        trailingZero: String(row.permutations).endsWith("0"),
       }))
       .sort((a, b) => d3.ascending(a.k, b.k));
 
@@ -35,6 +34,9 @@ d3.csv(datasetPath, d3.autoType)
     renderSplitHeatmap(data);
     renderGrowthChart(data);
     renderScatterPlot(data);
+    renderDepthHistogram(data);
+    renderLogLogGrowth(data);
+    renderGapChart(data);
     renderTable(data);
   })
   .catch((error) => {
@@ -45,10 +47,13 @@ d3.csv(datasetPath, d3.autoType)
   });
 
 function renderHeroStats(data) {
+  const uniqueK = [...new Set(data.map((d) => d.k))];
+  const primeCount = data.filter((d) => d.is_prime === 1).length;
   const stats = [
-    { label: "Terms", value: formatInt(data.length) },
+    { label: "Terms (unique k)", value: formatInt(uniqueK.length) },
     { label: "Max k", value: formatInt(d3.max(data, (d) => d.k)) },
     { label: "Longest witness", value: formatInt(d3.max(data, (d) => d["|permutations|"])) + " digits" },
+    { label: "Prime terms", value: formatInt(primeCount) },
   ];
 
   const container = d3.select("#hero-stats").html("");
@@ -67,10 +72,16 @@ function renderMetrics(data) {
   const suffixHits = data.filter(
     (d) => d.position_of_k + String(d.k).length === d["|permutations|"]
   ).length;
+  const multiWitness = [...new Set(data.filter((d) => d.num_witnesses > 1).map((d) => d.k))];
+  const nonTZTerms = data.filter((d) => d.trailing_zero === 0);
+  const gaps = data
+    .filter((d) => d.gap_prev > 0)
+    .map((d) => d.gap_prev);
+  const maxGap = gaps.length ? d3.max(gaps) : 0;
   const metrics = [
     {
       label: "Trailing-zero witnesses",
-      value: `${formatInt(data.filter((d) => d.trailingZero).length)}/${formatInt(data.length)}`,
+      value: `${formatInt(data.filter((d) => d.trailing_zero === 1).length)}/${formatInt(data.length)}`,
       detail: "Permutation values end in zero for the overwhelming majority of terms.",
     },
     {
@@ -87,6 +98,21 @@ function renderMetrics(data) {
       label: "Prefix / suffix hits",
       value: `${prefixHits} / ${suffixHits}`,
       detail: "Most terms land strictly inside the witness value instead of at either edge.",
+    },
+    {
+      label: "Non-trailing-zero outliers",
+      value: formatInt(nonTZTerms.length),
+      detail: nonTZTerms.map((d) => `k=${d.k} (P(${d.x},${d.y}) ends in ${String(d.permutations).slice(-1)})`).join("; ") || "None",
+    },
+    {
+      label: "Multiple-witness terms",
+      value: multiWitness.length ? multiWitness.join(", ") : "None found",
+      detail: "Terms where two different (x, y) splits both produce a valid witness.",
+    },
+    {
+      label: "Largest inter-term gap",
+      value: formatInt(maxGap),
+      detail: "The widest stretch of consecutive integers containing no sequence terms.",
     },
   ];
 
@@ -367,6 +393,11 @@ function renderTable(data) {
   const searchInput = document.getElementById("search-input");
   const lengthFilter = document.getElementById("length-filter");
   const limitFilter = document.getElementById("limit-filter");
+  const filterPrime = document.getElementById("filter-prime");
+  const filterPalindrome = document.getElementById("filter-palindrome");
+  const filterDistinct = document.getElementById("filter-distinct");
+  const filterNonzero = document.getElementById("filter-nonzero");
+  const filterMulti = document.getElementById("filter-multi");
   const tableBody = d3.select("#sequence-table");
   const summary = d3.select("#table-summary");
 
@@ -387,7 +418,13 @@ function renderTable(data) {
       const matchesLength = selectedLength === "all" || row["|k|"] === Number(selectedLength);
       const haystack = `${row.k} ${row.x} ${row.y} ${row.permutations}`.toLowerCase();
       const matchesQuery = !query || haystack.includes(query);
-      return matchesLength && matchesQuery;
+      const matchesPrime = !filterPrime.checked || row.is_prime === 1;
+      const matchesPalindrome = !filterPalindrome.checked || row.palindrome;
+      const matchesDistinct = !filterDistinct.checked || !row.repeatedDigits;
+      const matchesNonzero = !filterNonzero.checked || row.trailing_zero === 0;
+      const matchesMulti = !filterMulti.checked || row.num_witnesses > 1;
+      return matchesLength && matchesQuery && matchesPrime && matchesPalindrome
+        && matchesDistinct && matchesNonzero && matchesMulti;
     });
 
     const visible = filtered.slice(0, limit);
@@ -395,17 +432,19 @@ function renderTable(data) {
 
     tableBody
       .selectAll("tr")
-      .data(visible, (d) => d.k)
+      .data(visible, (d) => `${d.k}-${d.x}-${d.y}`)
       .join("tr")
       .html(
         (d) => `
-          <td>${d.k}</td>
+          <td>${d.k}${d.is_prime ? ' <span class="badge-prime" title="prime">★</span>' : ""}${d.palindrome ? ' <span class="badge-palindrome" title="palindrome">⬡</span>' : ""}</td>
           <td>${d.x}</td>
           <td>${d.y}</td>
           <td>${formatInt(d["|permutations|"])}</td>
           <td>${formatInt(d.position_of_k)}</td>
           <td>${formatDepth(d.relative_depth)}</td>
           <td>${formatRatio(d.expansion_ratio)}</td>
+          <td>${d.digit_sum}</td>
+          <td>${d.num_witnesses > 1 ? `<strong>${d.num_witnesses}</strong>` : d.num_witnesses}</td>
         `
       );
   }
@@ -413,7 +452,195 @@ function renderTable(data) {
   searchInput.addEventListener("input", updateTable);
   lengthFilter.addEventListener("change", updateTable);
   limitFilter.addEventListener("change", updateTable);
+  filterPrime.addEventListener("change", updateTable);
+  filterPalindrome.addEventListener("change", updateTable);
+  filterDistinct.addEventListener("change", updateTable);
+  filterNonzero.addEventListener("change", updateTable);
+  filterMulti.addEventListener("change", updateTable);
   updateTable();
+}
+
+function renderDepthHistogram(data) {
+  const numBins = 10;
+  const bins = d3.range(numBins).map((i) => ({
+    label: `${(i / numBins).toFixed(1)}–${((i + 1) / numBins).toFixed(1)}`,
+    lo: i / numBins,
+    hi: (i + 1) / numBins,
+    count: 0,
+  }));
+  data.forEach((d) => {
+    const b = Math.min(Math.floor(d.relative_depth * numBins), numBins - 1);
+    bins[b].count += 1;
+  });
+
+  const container = d3.select("#depth-histogram");
+  const width = container.node().clientWidth || 540;
+  const height = 340;
+  const margin = { top: 16, right: 18, bottom: 52, left: 52 };
+
+  const svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`);
+  const x = d3.scaleBand()
+    .domain(bins.map((b) => b.label))
+    .range([margin.left, width - margin.right])
+    .padding(0.18);
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(bins, (b) => b.count)])
+    .nice()
+    .range([height - margin.bottom, margin.top]);
+
+  // Uniform reference line
+  const uniform = data.length / numBins;
+  svg.append("line")
+    .attr("x1", margin.left).attr("x2", width - margin.right)
+    .attr("y1", y(uniform)).attr("y2", y(uniform))
+    .attr("stroke", colors.muted)
+    .attr("stroke-dasharray", "5,4")
+    .attr("stroke-width", 1.5);
+
+  svg.append("g").attr("class", "grid").attr("transform", "translate(0,0)")
+    .call(d3.axisLeft(y).ticks(5).tickSize(-(width - margin.left - margin.right)).tickFormat(""))
+    .select(".domain").remove();
+
+  svg.selectAll(".bar")
+    .data(bins)
+    .join("rect")
+    .attr("x", (b) => x(b.label))
+    .attr("y", (b) => y(b.count))
+    .attr("width", x.bandwidth())
+    .attr("height", (b) => y(0) - y(b.count))
+    .attr("rx", 10)
+    .attr("fill", colors.accent2)
+    .attr("fill-opacity", 0.82)
+    .on("mousemove", (event, b) =>
+      showTooltip(event, `Depth ${b.label}<br><strong>${formatInt(b.count)} terms</strong>`)
+    )
+    .on("mouseleave", hideTooltip);
+
+  svg.append("g").attr("class", "axis")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).tickSize(0))
+    .selectAll("text").attr("transform", "rotate(-35)").style("text-anchor", "end");
+
+  svg.append("g").attr("class", "axis")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).ticks(5));
+
+  svg.append("text").attr("class", "chart-label")
+    .attr("x", width / 2).attr("y", height - 4)
+    .attr("text-anchor", "middle").text("Relative depth bin");
+}
+
+function renderLogLogGrowth(data) {
+  // Build cumulative count over unique k values
+  const uniqueKSorted = [...new Set(data.map((d) => d.k))].sort(d3.ascending);
+  const growth = uniqueKSorted.map((k, i) => ({ k, count: i + 1 }));
+
+  const container = d3.select("#loglog-chart");
+  const width = container.node().clientWidth || 540;
+  const height = 340;
+  const margin = { top: 18, right: 18, bottom: 46, left: 62 };
+
+  const svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`);
+  const x = d3.scaleLog().domain(d3.extent(growth, (d) => d.k)).range([margin.left, width - margin.right]);
+  const y = d3.scaleLog().domain([1, d3.max(growth, (d) => d.count)]).range([height - margin.bottom, margin.top]);
+
+  // Power-law reference line: fit slope from first and last point
+  const x0 = growth[0].k, y0 = growth[0].count;
+  const x1 = growth[growth.length - 1].k, y1 = growth[growth.length - 1].count;
+  const alpha = Math.log(y1 / y0) / Math.log(x1 / x0);
+  const C = y0 / Math.pow(x0, alpha);
+  const refLine = [{ k: x0 }, { k: x1 }].map((d) => ({ k: d.k, count: C * Math.pow(d.k, alpha) }));
+
+  svg.append("g").attr("class", "grid").attr("transform", "translate(0,0)")
+    .call(d3.axisLeft(y).ticks(4).tickSize(-(width - margin.left - margin.right)).tickFormat(""))
+    .select(".domain").remove();
+
+  const refPath = d3.line().x((d) => x(d.k)).y((d) => y(d.count));
+  svg.append("path").datum(refLine)
+    .attr("fill", "none").attr("stroke", colors.accent3)
+    .attr("stroke-width", 1.5).attr("stroke-dasharray", "6,4")
+    .attr("d", refPath);
+
+  const linePath = d3.line().x((d) => x(d.k)).y((d) => y(d.count)).curve(d3.curveMonotoneX);
+  svg.append("path").datum(growth)
+    .attr("fill", "none").attr("stroke", colors.accent).attr("stroke-width", 2.5)
+    .attr("d", linePath);
+
+  svg.append("g").attr("class", "axis")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).ticks(4, "~s"));
+
+  svg.append("g").attr("class", "axis")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).ticks(4, "~s"));
+
+  svg.append("text").attr("class", "chart-label")
+    .attr("x", width / 2).attr("y", height - 6)
+    .attr("text-anchor", "middle").text("k (log scale)");
+
+  svg.append("text").attr("class", "chart-label")
+    .attr("transform", `translate(14 ${height / 2}) rotate(-90)`)
+    .attr("text-anchor", "middle").text("Count (log scale)");
+
+  svg.append("text")
+    .attr("x", width - margin.right - 4).attr("y", margin.top + 14)
+    .attr("text-anchor", "end").attr("fill", colors.accent3)
+    .style("font-size", "11px")
+    .text(`α ≈ ${alpha.toFixed(3)}`);
+}
+
+function renderGapChart(data) {
+  // Get unique (k, gap_prev) — deduplicate by k
+  const seen = new Set();
+  const gapData = [];
+  data.forEach((d) => {
+    if (!seen.has(d.k)) {
+      seen.add(d.k);
+      if (d.gap_prev > 0) gapData.push({ k: d.k, gap: d.gap_prev });
+    }
+  });
+
+  const container = d3.select("#gap-chart");
+  const width = container.node().clientWidth || 920;
+  const height = 520;
+  const margin = { top: 18, right: 18, bottom: 50, left: 62 };
+
+  const svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`);
+  const x = d3.scaleLinear().domain(d3.extent(gapData, (d) => d.k)).range([margin.left, width - margin.right]);
+  const y = d3.scaleLinear().domain([0, d3.max(gapData, (d) => d.gap)]).nice().range([height - margin.bottom, margin.top]);
+
+  svg.append("g").attr("class", "grid").attr("transform", "translate(0,0)")
+    .call(d3.axisLeft(y).ticks(5).tickSize(-(width - margin.left - margin.right)).tickFormat(""))
+    .select(".domain").remove();
+
+  svg.selectAll(".gap-bar")
+    .data(gapData)
+    .join("line")
+    .attr("x1", (d) => x(d.k)).attr("x2", (d) => x(d.k))
+    .attr("y1", y(0)).attr("y2", (d) => y(d.gap))
+    .attr("stroke", (d) => d.gap > 500 ? colors.accent3 : colors.accent2)
+    .attr("stroke-width", 1.5)
+    .attr("stroke-opacity", 0.7)
+    .on("mousemove", (event, d) =>
+      showTooltip(event, `k = ${formatInt(d.k)}<br>Gap from previous: <strong>${formatInt(d.gap)}</strong>`)
+    )
+    .on("mouseleave", hideTooltip);
+
+  svg.append("g").attr("class", "axis")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(formatInt));
+
+  svg.append("g").attr("class", "axis")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).ticks(5));
+
+  svg.append("text").attr("class", "chart-label")
+    .attr("x", width / 2).attr("y", height - 10)
+    .attr("text-anchor", "middle").text("k");
+
+  svg.append("text").attr("class", "chart-label")
+    .attr("transform", `translate(16 ${height / 2}) rotate(-90)`)
+    .attr("text-anchor", "middle").text("Gap from previous term");
 }
 
 function showTooltip(event, html) {
